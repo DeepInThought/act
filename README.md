@@ -3,6 +3,8 @@
 
 > "Think globally, <code>act</code> locally"
 
+__Currently this library only supports the HCL syntax, not the YAML syntax__
+
 Run your [GitHub Actions](https://developer.github.com/actions/) locally! Why would you want to do this? Two reasons:
 
 * **Fast Feedback** - Rather than having to commit/push every time you want test out the changes you are making to your `main.workflow` file (or for any changes to embedded GitHub actions), you can use `act` to run the actions locally. The [environment variables](https://developer.github.com/actions/creating-github-actions/accessing-the-runtime-environment/#environment-variables) and [filesystem](https://developer.github.com/actions/creating-github-actions/accessing-the-runtime-environment/#filesystem) are all configured to match what GitHub provides.
@@ -18,11 +20,15 @@ Let's see it in action with a [sample repo](https://github.com/cplee/github-acti
 # Installation
 To install with [Homebrew](https://brew.sh/), run: 
 
-```brew tap nektos/tap && brew install nektos/tap/act```
+```brew install nektos/tap/act```
 
 Alternatively, you can use the following: 
 
 ```curl  https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash```
+
+If you are running Arch Linux, you can install the [act](https://aur.archlinux.org/packages/act/) package with your favorite package manager:
+
+```yay -S act```
 
 # Commands
 
@@ -48,6 +54,32 @@ act -r
 # Enable verbose-logging (can be used with any of the above commands)
 act -v
 ```
+
+# Secrets
+
+To run `act` with secrets, you can enter them interactively or supply them as environment variables.
+If you have a secret called `FOO` in your `main.workflow`, `act` will take whatever you have set as `FOO` in the session from which you are running `act`.
+If `FOO` is unset, it will ask you interactively.
+
+You can set environment variables for the current session by running `export FOO="zap"`, or globally in your `.profile`.
+You can also set environment variables *per directory* using a tool such as [direnv](https://direnv.net/).
+**Be careful not to expose secrets**:
+You may want to `.gitignore` any files or folders containing secrets, and/or encrypt secrets.
+
+# Skip Actions When Run in `act`
+
+You may sometimes want to skip some actions when you're running a `main.workflow` in act, such as deployment.
+You can achieve something similar by using a [filter](https://github.com/actions/bin/tree/master/filter) action, filtering on all [`GITHUB_ACTOR`](https://developer.github.com/actions/creating-github-actions/accessing-the-runtime-environment/#environment-variables)s *except* `nektos/act`, which is the `GITHUB_ACTOR` set by `act`.
+
+```
+action "Filter Not Act" {
+  uses = "actions/bin/filter@3c0b4f0e63ea54ea5df2914b4fabf383368cd0da"
+  args = "not actor nektos/act"
+}
+```
+
+Just remember that GitHub actions will cancel all upcoming and concurrent actions on a neutral exit code.
+To avoid prematurely cancelling actions, place this filter at the latest possible point in the build graph.
 
 # Support
 
